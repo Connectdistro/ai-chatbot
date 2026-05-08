@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>NEBULA AI | Quantum Customer Support</title>
+  <!-- Futuristic Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none; /* sleeker feel, but content still selectable */
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background-color: #03050b;
+      color: #ffffff;
+      overflow-x: hidden;
+      position: relative;
+      cursor: default;
+    }
+
+    /* ----- 3D Canvas Background (Three.js) ----- */
+    #three-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;  /* allows clicking through to content */
+      display: block;
+    }
+
+    /* ----- MAIN CONTENT (glassy, elevated) ----- */
+    .content {
+      position: relative;
+      z-index: 10;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.8rem;
+      backdrop-filter: blur(0px);
+    }
+
+    /* Holographic Hero Section */
+    .hero {
+      text-align: center;
+      margin-bottom: 3.5rem;
+      padding: 2rem 1.5rem;
+      background: rgba(5, 15, 30, 0.45);
+      backdrop-filter: blur(14px);
+      border-radius: 3rem;
+      border: 1px solid rgba(0, 255, 255, 0.25);
+      box-shadow: 0 25px 45px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(0, 255, 255, 0.1) inset, 0 0 20px rgba(0, 255, 255, 0.1);
+      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      animation: floatGlow 6s infinite alternate;
+    }
+
+    .hero:hover {
+      border-color: rgba(218, 165, 32, 0.8);
+      box-shadow: 0 30px 55px -15px rgba(0,0,0,0.6), 0 0 0 2px rgba(218, 165, 32, 0.3) inset, 0 0 35px rgba(218, 165, 32, 0.2);
+    }
+
+    @keyframes floatGlow {
+      0% { transform: translateY(0px); box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,255,255,0.2) inset; }
+      100% { transform: translateY(-5px); box-shadow: 0 30px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(218,165,32,0.4) inset; }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      padding: 0.45rem 1.4rem;
+      border-radius: 80px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: #aaffff;
+      border: 1px solid rgba(0, 255, 255, 0.5);
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+      font-family: 'Orbitron', monospace;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 800;
+      font-family: 'Orbitron', 'Inter', sans-serif;
+      background: linear-gradient(135deg, #ffffff, #ffd966, #3bc9ff, #aa88ff);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 15px rgba(0,200,255,0.3);
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      color: rgba(220, 240, 255, 0.9);
+      max-width: 680px;
+      margin: 0 auto;
+      font-weight: 400;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Cards Grid - Advanced Holographic Glass */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin: 3.5rem 0;
+    }
+
+    .card {
+      background: rgba(8, 18, 35, 0.55);
+      backdrop-filter: blur(16px);
+      border-radius: 2.2rem;
+      padding: 2rem 1.6rem;
+      border: 1px solid rgba(100, 210, 255, 0.3);
+      transition: all 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+      transform: translateY(0) scale(1);
+      box-shadow: 0 15px 35px -10px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(218, 165, 32, 0.15), transparent);
+      transition: left 0.7s ease;
+      pointer-events: none;
+    }
+
+    .card:hover::before {
+      left: 100%;
+    }
+
+    .card:hover {
+      transform: translateY(-10px) scale(1.02);
+      border-color: #ffd966;
+      background: rgba(12, 25, 50, 0.75);
+      box-shadow: 0 28px 45px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(218,165,32,0.5) inset;
+    }
+
+    .card h3 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: linear-gradient(135deg, #ffeaac, #ffb347);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      font-family: 'Orbitron', monospace;
+    }
+
+    .card h3::before {
+      content: "⚡";
+      font-size: 1.6rem;
+      color: #ffd966;
+      filter: drop-shadow(0 0 6px gold);
+    }
+
+    .card p {
+      color: rgba(235, 245, 255, 0.9);
+      line-height: 1.5;
+      margin-bottom: 1.2rem;
+      font-weight: 400;
+    }
+
+    .card ul {
+      list-style: none;
+      margin-top: 0.8rem;
+    }
+
+    .card li {
+      margin: 0.75rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 500;
+      color: #fff2d0;
+    }
+
+    .card li::before {
+      content: "🪐";
+      font-size: 1rem;
+      color: #ffd966;
+    }
+
+    /* Central Feature with Holographic Chips */
+    .feature {
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(16px);
+      border-radius: 2.5rem;
+      padding: 2.5rem 2rem;
+      margin: 2.5rem 0;
+      text-align: center;
+      border: 1px solid rgba(218, 165, 32, 0.4);
+      transition: all 0.3s;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .feature h2 {
+      font-size: clamp(1.7rem, 5vw, 2.4rem);
+      font-weight: 800;
+      font-family: 'Orbitron', monospace;
+      background: linear-gradient(145deg, #ffe6b0, #ffaa33);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .feature p {
+      color: #ccddf8;
+      max-width: 650px;
+      margin: 1rem auto;
+    }
+
+    .chips {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      margin-top: 1.8rem;
+    }
+
+    .chip {
+      background: rgba(0, 20, 50, 0.7);
+      backdrop-filter: blur(5px);
+      padding: 0.7rem 1.5rem;
+      border-radius: 60px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      font-family: 'Orbitron', monospace;
+      border: 1px solid rgba(218, 165, 32, 0.5);
+      transition: all 0.25s ease;
+      cursor: pointer;
+      color: #fff3cf;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(4px);
+    }
+
+    .chip:hover {
+      background: rgba(218, 165, 32, 0.25);
+      transform: scale(1.05);
+      border-color: #ffd966;
+      box-shadow: 0 0 15px rgba(218,165,32,0.3);
+      color: white;
+    }
+
+    /* Futuristic Footer */
+    .footer {
+      text-align: center;
+      margin-top: 4rem;
+      padding-top: 1.8rem;
+      border-top: 1px solid rgba(0, 255, 255, 0.25);
+      font-size: 0.85rem;
+      color: rgba(180, 210, 255, 0.8);
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .content {
+        padding: 1rem;
+      }
+      .cards-grid {
+        gap: 1.5rem;
+      }
+      .card {
+        padding: 1.4rem;
+      }
+      .card h3 {
+        font-size: 1.4rem;
+      }
+      .hero {
+        padding: 1.4rem;
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #03050b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ffd966;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- THREE.JS CANVAS (Advanced 3D Scene) -->
+  <canvas id="three-canvas"></canvas>
+
+  <div class="content">
+    <div class="hero">
+      <div class="badge">🌀 QUANTUM CORE · NEBULA INTELLIGENCE</div>
+      <h1>Support beyond dimensions</h1>
+      <p>Hyper-intelligent 24/7 AI assistant infused with quantum logic. Trained on your cosmos of data — instant, precise, interstellar.</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <h3>Neural answers</h3>
+        <p>Deep-learning extraction from your knowledge base — refunds, logistics, product inquiries resolved in milliseconds.</p>
+        <ul>
+          <li>Zero latency memory</li>
+          <li>Policy & compliance</li>
+          <li>Instant support sync</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Multiversal AI</h3>
+        <p>Context fusion™ between your documents and real-time knowledge graph. Hyper-accurate responses.</p>
+        <ul>
+          <li>Product oracle</li>
+          <li>Order telemetry</li>
+          <li>Smart account help</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Quantum embed</h3>
+        <p>One line integration, infinite customization. Visual neural interface works on any platform.</p>
+        <ul>
+          <li>Frictionless portal</li>
+          <li>Holographic UI</li>
+          <li>Cross-dimensional memory</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature">
+      <h2>✨ Interact with our sentient AI ✨</h2>
+      <p>Tap the gold neural bubble → ask about policies, intergalactic shipping, or cosmic support.</p>
+      <div class="chips">
+        <div class="chip">🌀 "Decode refund protocol"</div>
+        <div class="chip">🚀 "Quantum shipping timeline"</div>
+        <div class="chip">📡 "Open stellar support channel"</div>
+        <div class="chip">🌍 "Interdimensional delivery"</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>⚡ NEBULA AI SUPPORT v.∞ | Powered by DeepSeek-RAG + Quantum Core | Neural Privacy Guard</p>
+      <p style="margin-top: 0.5rem; font-size: 0.7rem;">Encrypted cosmic vault — your data exists only in the answer hyperplane</p>
+    </div>
+  </div>
+
+  <!-- CHAT WIDGET (same embed, updated to cosmic gold) -->
+  <script
+    src="http://localhost:3000/chatbot.js"
+    data-bot-name="Nebula Sentinel"
+    data-color="#DAA520"
+    data-api="http://localhost:3000">
+  </script>
+
+  <!-- Three.js Library (Futuristic 3D Engine) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // --- Setup Scene, Camera, Renderer (transparent bg for blending with page)
+    const canvas = document.getElementById('three-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    const scene = new THREE.Scene();
+    scene.background = null; // fully transparent (CSS radial gradient shines through)
+    scene.fog = new THREE.FogExp2(0x03050b, 0.0025); // subtle depth
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 2, 12);
+    camera.lookAt(0, 0, 0);
+
+    // --- Lighting (Futuristic volumetric)
+    const ambientLight = new THREE.AmbientLight(0x111122);
+    scene.add(ambientLight);
+    const mainLight = new THREE.DirectionalLight(0xffdd99, 1.2);
+    mainLight.position.set(5, 8, 3);
+    scene.add(mainLight);
+    const fillLight = new THREE.PointLight(0x3366ff, 0.6);
+    fillLight.position.set(-3, 2, 4);
+    scene.add(fillLight);
+    const backLight = new THREE.PointLight(0xffaa44, 0.5);
+    backLight.position.set(0, 1, -6);
+    scene.add(backLight);
+    
+    // gold rim light
+    const goldLight = new THREE.PointLight(0xffaa33, 0.8);
+    goldLight.position.set(2, 3, 3);
+    scene.add(goldLight);
+
+    // --- Central: "Earth Core" (Prominent, glowing, high-tech)
+    const earthGeometry = new THREE.SphereGeometry(1.35, 128, 128);
+    
+    // create custom canvas texture for Earth with cyber-gold trim and blue/green sci-fi look
+    const canvasTexture = document.createElement('canvas');
+    canvasTexture.width = 1024;
+    canvasTexture.height = 1024;
+    const texCtx = canvasTexture.getContext('2d');
+    texCtx.fillStyle = '#0a2a4a';
+    texCtx.fillRect(0, 0, 1024, 1024);
+    // glowing continents effect (abstract tech)
+    texCtx.globalCompositeOperation = 'lighter';
+    texCtx.beginPath();
+    texCtx.arc(512, 512, 380, 0, Math.PI*2);
+    texCtx.fillStyle = '#2a6f9f';
+    texCtx.fill();
+    texCtx.beginPath();
+    texCtx.arc(400, 480, 140, 0, Math.PI*2);
+    texCtx.fillStyle = '#4caf7a';
+    texCtx.fill();
+    texCtx.beginPath();
+    texCtx.arc(680, 430, 110, 0, Math.PI*2);
+    texCtx.fillStyle = '#6fbf4c';
+    texCtx.fill();
+    texCtx.beginPath();
+    texCtx.arc(280, 600, 95, 0, Math.PI*2);
+    texCtx.fillStyle = '#3b9f5e';
+    texCtx.fill();
+    // gold wireframe lines
+    texCtx.strokeStyle = '#ffcc55';
+    texCtx.lineWidth = 12;
+    texCtx.beginPath();
+    texCtx.arc(512, 512, 460, 0, Math.PI*2);
+    texCtx.stroke();
+    texCtx.beginPath();
+    texCtx.moveTo(512, 52);
+    texCtx.lineTo(512, 972);
+    texCtx.stroke();
+    texCtx.beginPath();
+    texCtx.moveTo(52, 512);
+    texCtx.lineTo(972, 512);
+    texCtx.stroke();
+    
+    const earthMaterial = new THREE.MeshStandardMaterial({
+      map: new THREE.CanvasTexture(canvasTexture),
+      emissive: 0x113355,
+      emissiveIntensity: 0.45,
+      metalness: 0.75,
+      roughness: 0.3,
+      color: 0x88aaff
+    });
+    const earthCore = new THREE.Mesh(earthGeometry, earthMaterial);
+    scene.add(earthCore);
+    
+    // Holographic glowing ring around Earth (golden)
+    const ringGeo = new THREE.TorusGeometry(1.85, 0.08, 64, 300);
+    const ringMat = new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0xff4400, emissiveIntensity: 0.55, metalness: 0.9 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2.2;
+    ring.rotation.z = 0.3;
+    scene.add(ring);
+    
+    const outerRingGeo = new THREE.TorusGeometry(2.25, 0.05, 64, 400);
+    const outerRingMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, emissive: 0x2266aa, emissiveIntensity: 0.4 });
+    const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
+    outerRing.rotation.x = Math.PI / 1.8;
+    scene.add(outerRing);
+    
+    // --- Floating particle swarm (neural network field) + orbiting cubes
+    const particleCount = 1800;
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      // spherical cloud formation
+      const radius = 3.5 + Math.random() * 2.5;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      particlePositions[i*3] = radius * Math.sin(phi) * Math.cos(theta);
+      particlePositions[i*3+1] = radius * Math.sin(phi) * Math.sin(theta) * 0.6;
+      particlePositions[i*3+2] = radius * Math.cos(phi);
+    }
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMaterial = new THREE.PointsMaterial({
+      color: 0xffaa66,
+      size: 0.045,
+      transparent: true,
+      blending: THREE.AdditiveBlending
+    });
+    const particleField = new THREE.Points(particlesGeometry, particleMaterial);
+    scene.add(particleField);
+    
+    // second golden dust particles
+    const dustCount = 2400;
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPos = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i++) {
+      dustPos[i*3] = (Math.random() - 0.5) * 14;
+      dustPos[i*3+1] = (Math.random() - 0.5) * 8;
+      dustPos[i*3+2] = (Math.random() - 0.5) * 12 - 3;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    const dustMat = new THREE.PointsMaterial({ color: 0xffdd88, size: 0.025, transparent: true, blending: THREE.AdditiveBlending });
+    const dustField = new THREE.Points(dustGeo, dustMat);
+    scene.add(dustField);
+    
+    // Orbiting "data satellites" (small cubes with gold edges)
+    const satellites = [];
+    const satCount = 24;
+    for (let i = 0; i < satCount; i++) {
+      const boxGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+      const boxMat = new THREE.MeshStandardMaterial({ color: 0xffbb55, emissive: 0x442200, metalness: 0.85 });
+      const sat = new THREE.Mesh(boxGeo, boxMat);
+      sat.userData = {
+        radius: 2.95,
+        speed: 0.005 + Math.random() * 0.003,
+        angle: (i / satCount) * Math.PI * 2,
+        yOffset: (Math.random() - 0.5) * 1.2
+      };
+      scene.add(sat);
+      satellites.push(sat);
+    }
+    
+    // rotating particles ring (crystalline)
+    const ringParticlesCount = 800;
+    const ringPartGeo = new THREE.BufferGeometry();
+    const ringPartPos = new Float32Array(ringParticlesCount * 3);
+    for (let i = 0; i < ringParticlesCount; i++) {
+      const rad = 2.6;
+      const angleRing = (i / ringParticlesCount) * Math.PI * 2;
+      ringPartPos[i*3] = Math.cos(angleRing) * rad;
+      ringPartPos[i*3+1] = Math.sin(angleRing) * rad * 0.3;
+      ringPartPos[i*3+2] = Math.sin(angleRing) * rad * 0.5;
+    }
+    ringPartGeo.setAttribute('position', new THREE.BufferAttribute(ringPartPos, 3));
+    const ringPartMat = new THREE.PointsMaterial({ color: 0xffaa88, size: 0.04, blending: THREE.AdditiveBlending });
+    const ringParticlesObj = new THREE.Points(ringPartGeo, ringPartMat);
+    scene.add(ringParticlesObj);
+    
+    // additional star streaks (background stars)
+    const starCount = 1500;
+    const starGeo = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      starPositions[i*3] = (Math.random() - 0.5) * 200;
+      starPositions[i*3+1] = (Math.random() - 0.5) * 100;
+      starPositions[i*3+2] = (Math.random() - 0.5) * 80 - 40;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xcceeff, size: 0.08, transparent: true, opacity: 0.6 });
+    const starsField = new THREE.Points(starGeo, starMat);
+    scene.add(starsField);
+    
+    // elegant thin wireframe sphere (holographic grid)
+    const gridSphereGeo = new THREE.SphereGeometry(2.45, 32, 32);
+    const wireframeMat = new THREE.MeshBasicMaterial({ color: 0x44aaff, wireframe: true, transparent: true, opacity: 0.13 });
+    const holoGrid = new THREE.Mesh(gridSphereGeo, wireframeMat);
+    scene.add(holoGrid);
+    
+    // --- Mouse parallax effect
+    let mouseX = 0, mouseY = 0;
+    document.addEventListener('mousemove', (event) => {
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseY = (event.clientY / window.innerHeight) * 2 - 1;
+    });
+    
+    // --- Animation Loop + Orbital update
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.012;
+      
+      // Rotate central earth core and rings
+      earthCore.rotation.y += 0.004;
+      earthCore.rotation.x = Math.sin(time * 0.2) * 0.05;
+      ring.rotation.z += 0.008;
+      ring.rotation.y += 0.003;
+      outerRing.rotation.x += 0.005;
+      outerRing.rotation.z += 0.004;
+      holoGrid.rotation.y += 0.001;
+      holoGrid.rotation.x += 0.0005;
+      
+      // particle field rotation
+      particleField.rotation.y += 0.0015;
+      particleField.rotation.x = Math.sin(time * 0.1) * 0.1;
+      dustField.rotation.y += 0.0008;
+      dustField.rotation.z += 0.0004;
+      ringParticlesObj.rotation.y += 0.01;
+      ringParticlesObj.rotation.x += 0.005;
+      starsField.rotation.y -= 0.0002;
+      
+      // update orbiting satellites (dynamic movement)
+      satellites.forEach(sat => {
+        const data = sat.userData;
+        data.angle += data.speed;
+        const x = Math.cos(data.angle) * data.radius;
+        const z = Math.sin(data.angle) * data.radius;
+        const y = Math.sin(data.angle * 1.7) * 0.5 + data.yOffset * 0.6;
+        sat.position.set(x, y, z);
+        sat.rotation.x += 0.05;
+        sat.rotation.y += 0.03;
+      });
+      
+      // Dynamic camera micro-motion (futuristic floating)
+      camera.position.x += (mouseX * 0.3 - camera.position.x) * 0.05;
+      camera.position.y += (-mouseY * 0.2 - camera.position.y) * 0.05;
+      camera.lookAt(0, 0.2, 0);
+      
+      // pulse gold light intensity
+      const intensity = 0.7 + Math.sin(time * 3) * 0.2;
+      goldLight.intensity = intensity;
+      
+      renderer.render(scene, camera);
+    }
+    
+    function resizeHandler() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+    
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x000000, 0); // transparent
+    window.addEventListener('resize', resizeHandler);
+    
+    animate();
+    
+    // small extra: subtle UI shimmer on cards using JS not needed, CSS handles
+  </script>
+</body>
+</html>
