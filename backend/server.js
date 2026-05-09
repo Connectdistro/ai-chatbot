@@ -26,15 +26,36 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json());
 
-// ── STATIC FILES ──
+// ══════════════════════════════════════════
+// STATIC FILES
+// ══════════════════════════════════════════
+
+// Serve frontend files
 app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Serve admin files
 app.use('/admin', express.static(path.join(__dirname, '../admin')));
 
+// Explicit routes for admin pages
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin/index.html'));
+});
+app.get('/admin/index.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin/index.html'));
+});
+app.get('/admin/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../admin/login.html'));
+});
+
+// Serve chat widget explicitly
 app.get('/chatbot.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/chatbot.js'));
 });
 
-// ── HEALTH CHECK ──
+// ══════════════════════════════════════════
+// HEALTH CHECK
+// ══════════════════════════════════════════
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Multi-tenant chatbot server running' });
 });
@@ -160,9 +181,10 @@ app.get('/api/admin/tenants/:id/analytics', verifyToken, async (req, res) => {
 });
 
 // ══════════════════════════════════════════
-// PUBLIC CHAT ROUTE (per tenant)
+// PUBLIC CHAT ROUTES (per tenant)
 // ══════════════════════════════════════════
 
+// Tenant chat
 app.post('/api/chat/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
@@ -170,22 +192,17 @@ app.post('/api/chat/:tenantId', async (req, res) => {
 
     if (!message) return res.status(400).json({ error: 'Message is required' });
 
-    // Verify tenant exists and is active
     const tenant = await getTenantById(tenantId);
     if (!tenant || !tenant.is_active) {
       return res.status(404).json({ error: 'Chatbot not found or inactive' });
     }
 
     const sid = sessionId || uuidv4();
-
-    // Get conversation history from Supabase
     const history = await getSessionHistory(tenantId, sid);
     history.push({ role: 'user', content: message });
 
-    // Get AI response
     const reply = await chat(tenantId, tenant.system_prompt, history);
 
-    // Save messages and analytics
     await saveMessage(tenantId, sid, 'user', message);
     await saveMessage(tenantId, sid, 'assistant', reply);
     await logAnalytics(tenantId, sid, message, reply);
@@ -210,9 +227,20 @@ app.post('/api/chat/:tenantId/rate', async (req, res) => {
   }
 });
 
-// ── START ──
+// Legacy chat route (no tenant)
+app.post('/api/chat', async (req, res) => {
+  res.status(400).json({
+    error: 'Please use /api/chat/:tenantId — see your admin dashboard for your tenant ID.'
+  });
+});
+
+// ══════════════════════════════════════════
+// START SERVER
+// ══════════════════════════════════════════
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Multi-tenant server running on http://localhost:${PORT}`);
-  console.log(`Admin dashboard: http://localhost:${PORT}/admin`);
+  console.log(`✅ Multi-tenant server running on http://localhost:${PORT}`);
+  console.log(`🔧 Admin dashboard: http://localhost:${PORT}/admin`);
+  console.log(`💬 Chat API: http://localhost:${PORT}/api/chat/:tenantId`);
 });
