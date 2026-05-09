@@ -1,24 +1,53 @@
 const axios = require('axios');
-const { searchDocuments } = require('./ingest');
-const config = require('../config');
+const { getTenantDocuments } = require('./tenants');
 
-async function chat(history) {
+// Simple keyword search across tenant documents
+function searchDocuments(docs, query, nResults = 3) {
+  if (!docs || docs.length === 0) return [];
+
+  const queryWords = query.toLowerCase().split(/\s+/);
+  const chunks = [];
+
+  // Break each document into chunks
+  docs.forEach(doc => {
+    const words = doc.content.split(/\s+/);
+    for (let i = 0; i < words.length; i += 450) {
+      chunks.push(words.slice(i, i + 500).join(' '));
+    }
+  });
+
+  const scored = chunks.map(chunk => {
+    const lower = chunk.toLowerCase();
+    const score = queryWords.reduce((acc, w) => acc + (lower.includes(w) ? 1 : 0), 0);
+    return { chunk, score };
+  });
+
+  return scored
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, nResults)
+    .map(item => item.chunk);
+}
+
+async function chat(tenantId, systemPrompt, history) {
   const lastMessage = history[history.length - 1].content;
 
-  // Search for relevant documents
-  const contextDocs = await searchDocuments(lastMessage);
-  const context = contextDocs.length > 0
-    ? `Relevant information from company documents:\n${contextDocs.join('\n\n')}`
-    : 'No specific document context found.';
+  // Load tenant documents and search
+  let context = 'No specific document context available.';
+  try {
+    const docs = await getTenantDocuments(tenantId);
+    const results = searchDocuments(docs, lastMessage);
+    if (results.length > 0) {
+      context = `Relevant information from company documents:\n\n${results.join('\n\n')}`;
+    }
+  } catch (err) {
+    console.error('Document search error:', err.message);
+  }
 
-  // Build system prompt from config
-  const systemPrompt = config.systemPrompt
-    .replace('{botName}', config.botName)
-    .replace('{businessName}', config.businessName)
-    + `\n\n${context}`;
+  const fullSystemPrompt = `${systemPrompt}\n\n${context}`;
 
   const messages = [
-    { role: 'system', content: systemPrompt },
+    { role: 'system', content: fullSystemPrompt },
     ...history
   ];
 
@@ -44,7 +73,7 @@ async function chat(history) {
 
   } catch (error) {
     if (error.response) {
-      console.error('DeepSeek API Error:', error.response.status, JSON.stringify(error.response.data));
+      console.error('DeepSeek Error:', error.response.status, JSON.stringify(error.response.data));
     } else {
       console.error('Chat error:', error.message);
     }

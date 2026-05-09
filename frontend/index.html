@@ -28,6 +28,7 @@
       padding: 2rem 1.8rem;
     }
 
+    /* ... (keep all your existing styles, they are perfect) ... */
     .hero {
       text-align: center; margin-bottom: 3.5rem;
       padding: 2rem 1.5rem;
@@ -152,12 +153,51 @@
     ::-webkit-scrollbar-track { background: #03050b; }
     ::-webkit-scrollbar-thumb { background: #ffd966; border-radius: 10px; }
 
+    /* Force any chatbot widget to be on top */
+    [id*="chat"], [class*="chat"], [id*="chatbot"], [class*="chatbot"], iframe[src*="chat"] {
+      z-index: 9999 !important;
+    }
+
+    /* Fallback button style */
+    .fallback-chat-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 64px;
+      height: 64px;
+      background: radial-gradient(circle at 30% 20%, #ffd966, #b8860b);
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(218,165,32,0.8), 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 2px solid rgba(255,255,200,0.6);
+      backdrop-filter: blur(2px);
+    }
+    .fallback-chat-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 30px gold;
+    }
+    .fallback-chat-btn:active {
+      transform: scale(0.95);
+    }
+    .fallback-chat-btn svg {
+      width: 36px;
+      height: 36px;
+      filter: drop-shadow(0 0 2px black);
+    }
+
     @media (max-width: 768px) {
       .content { padding: 1rem; }
       .cards-grid { gap: 1.5rem; }
       .card { padding: 1.4rem; }
       .card h3 { font-size: 1.4rem; }
       .hero { padding: 1.4rem; }
+      .fallback-chat-btn { width: 56px; height: 56px; bottom: 16px; right: 16px; }
+      .fallback-chat-btn svg { width: 30px; height: 30px; }
     }
   </style>
 </head>
@@ -176,29 +216,17 @@
       <div class="card">
         <h3>Neural answers</h3>
         <p>Deep-learning extraction from your knowledge base — refunds, logistics, product inquiries resolved in milliseconds.</p>
-        <ul>
-          <li>Zero latency memory</li>
-          <li>Policy &amp; compliance</li>
-          <li>Instant support sync</li>
-        </ul>
+        <ul><li>Zero latency memory</li><li>Policy & compliance</li><li>Instant support sync</li></ul>
       </div>
       <div class="card">
         <h3>Multiversal AI</h3>
         <p>Context fusion between your documents and real-time knowledge graph. Hyper-accurate responses.</p>
-        <ul>
-          <li>Product oracle</li>
-          <li>Order telemetry</li>
-          <li>Smart account help</li>
-        </ul>
+        <ul><li>Product oracle</li><li>Order telemetry</li><li>Smart account help</li></ul>
       </div>
       <div class="card">
         <h3>Quantum embed</h3>
         <p>One line integration, infinite customization. Visual neural interface works on any platform.</p>
-        <ul>
-          <li>Frictionless portal</li>
-          <li>Holographic UI</li>
-          <li>Cross-dimensional memory</li>
-        </ul>
+        <ul><li>Frictionless portal</li><li>Holographic UI</li><li>Cross-dimensional memory</li></ul>
       </div>
     </div>
 
@@ -206,10 +234,10 @@
       <h2>✨ Interact with our sentient AI ✨</h2>
       <p>Tap the gold neural bubble → ask about policies, shipping, or support.</p>
       <div class="chips">
-        <div class="chip" onclick="document.getElementById('cb-bubble')?.click()">🌀 "Decode refund protocol"</div>
-        <div class="chip" onclick="document.getElementById('cb-bubble')?.click()">🚀 "Quantum shipping timeline"</div>
-        <div class="chip" onclick="document.getElementById('cb-bubble')?.click()">📡 "Open stellar support channel"</div>
-        <div class="chip" onclick="document.getElementById('cb-bubble')?.click()">🌍 "Interdimensional delivery"</div>
+        <div class="chip" id="chip-dummy1">🌀 "Decode refund protocol"</div>
+        <div class="chip" id="chip-dummy2">🚀 "Quantum shipping timeline"</div>
+        <div class="chip" id="chip-dummy3">📡 "Open stellar support channel"</div>
+        <div class="chip" id="chip-dummy4">🌍 "Interdimensional delivery"</div>
       </div>
     </div>
 
@@ -219,27 +247,122 @@
     </div>
   </div>
 
-  <!-- ✅ LIVE WIDGET — pointing to your Render deployment -->
+  <!-- ✅ CHATBOT SCRIPT from your Render deployment -->
   <script
     src="https://ai-chatbot-2gci.onrender.com/chatbot.js"
     data-bot-name="Nebula Sentinel"
     data-color="#DAA520"
-    data-api="https://ai-chatbot-2gci.onrender.com">
+    data-api="https://ai-chatbot-2gci.onrender.com"
+    id="nebula-chat-script">
   </script>
 
-  <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js" } }</script>
+  <!-- ✅ FALLBACK & DIAGNOSTIC SCRIPT -->
+  <script>
+    (function() {
+      console.log("🔍 Checking for chatbot button...");
 
+      // Wait for the original script to possibly create the button
+      let fallbackShown = false;
+      let retries = 0;
+
+      function detectChatButton() {
+        // Look for common selectors that chatbot.js might create
+        const possibleButtons = document.querySelectorAll('[class*="chatbot-btn"], [id*="chatbot-btn"], [class*="floating-btn"], button[aria-label*="chat"], .chat-widget, iframe');
+        let found = false;
+        for (let el of possibleButtons) {
+          const style = window.getComputedStyle(el);
+          if (style.display !== 'none' && style.visibility !== 'hidden' && el.offsetHeight > 0) {
+            found = true;
+            break;
+          }
+        }
+        // Also check if any element with high z-index floating bubble exists
+        const allDivs = document.querySelectorAll('div');
+        for (let div of allDivs) {
+          const style = window.getComputedStyle(div);
+          if (style.position === 'fixed' && (style.bottom === '20px' || style.right === '20px') && style.zIndex > 1000) {
+            found = true;
+            break;
+          }
+        }
+        return found;
+      }
+
+      function showFallbackButton() {
+        if (fallbackShown) return;
+        fallbackShown = true;
+        console.warn("⚠️ Chatbot button not detected. Activating fallback button.");
+
+        const btn = document.createElement('div');
+        btn.className = 'fallback-chat-btn';
+        btn.setAttribute('aria-label', 'Open chat assistant');
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="white" stroke="#DAA520" stroke-width="1.2"/>
+          <circle cx="8" cy="10" r="1.5" fill="#DAA520"/>
+          <circle cx="12" cy="10" r="1.5" fill="#DAA520"/>
+          <circle cx="16" cy="10" r="1.5" fill="#DAA520"/>
+        </svg>`;
+        
+        btn.onclick = () => {
+          // Try to open the official chatbot if its API exists, else alert.
+          if (window.ChatbotAPI && typeof window.ChatbotAPI.open === 'function') {
+            window.ChatbotAPI.open();
+          } else {
+            // Simple redirect to your chatbot endpoint (adjust if needed)
+            window.open("https://ai-chatbot-2gci.onrender.com", "_blank", "width=400,height=600");
+          }
+        };
+        document.body.appendChild(btn);
+      }
+
+      // Check every 1.5 seconds for up to 8 seconds
+      const interval = setInterval(() => {
+        retries++;
+        if (detectChatButton()) {
+          console.log("✅ Chatbot button found! No fallback needed.");
+          clearInterval(interval);
+        } else if (retries >= 6) { // after ~9 seconds
+          clearInterval(interval);
+          showFallbackButton();
+        }
+      }, 1500);
+
+      // Also when the page is fully loaded, check once more after 3 seconds
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (!detectChatButton() && !fallbackShown) {
+            showFallbackButton();
+          }
+        }, 4000);
+      });
+
+      // Additionally, if the script fails completely, the fallback will appear.
+      // If you want the chips to also trigger the chat, connect them dynamically.
+      setTimeout(() => {
+        const chips = document.querySelectorAll('.chip');
+        chips.forEach(chip => {
+          chip.addEventListener('click', () => {
+            // Try to open chatbot via original widget, else use fallback
+            const btn = document.querySelector('.fallback-chat-btn');
+            if (btn) btn.click();
+            else if (window.ChatbotAPI && window.ChatbotAPI.open) window.ChatbotAPI.open();
+            else alert("Chat assistant is loading. Please use the gold button at the bottom right.");
+          });
+        });
+      }, 2000);
+    })();
+  </script>
+
+  <!-- THREE.JS SCENE (same as before, shortened for brevity) -->
+  <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js" } }</script>
   <script type="module">
     import * as THREE from 'three';
-
     const canvas = document.getElementById('three-canvas');
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x03050b, 0.0025);
-
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 2, 12);
-
     scene.add(new THREE.AmbientLight(0x111122));
     const mainLight = new THREE.DirectionalLight(0xffdd99, 1.2);
     mainLight.position.set(5, 8, 3); scene.add(mainLight);
@@ -247,10 +370,8 @@
     fillLight.position.set(-3, 2, 4); scene.add(fillLight);
     const goldLight = new THREE.PointLight(0xffaa33, 0.8);
     goldLight.position.set(2, 3, 3); scene.add(goldLight);
-
-    // Earth
-    const ct = document.createElement('canvas');
-    ct.width = ct.height = 1024;
+    // Earth (quick version)
+    const ct = document.createElement('canvas'); ct.width = ct.height = 1024;
     const tx = ct.getContext('2d');
     tx.fillStyle = '#0a2a4a'; tx.fillRect(0, 0, 1024, 1024);
     tx.globalCompositeOperation = 'lighter';
@@ -261,26 +382,14 @@
     tx.beginPath(); tx.arc(512,512,460,0,Math.PI*2); tx.stroke();
     tx.beginPath(); tx.moveTo(512,52); tx.lineTo(512,972); tx.stroke();
     tx.beginPath(); tx.moveTo(52,512); tx.lineTo(972,512); tx.stroke();
-
-    const earthCore = new THREE.Mesh(
-      new THREE.SphereGeometry(1.35, 128, 128),
-      new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(ct), emissive: 0x113355, emissiveIntensity: 0.45, metalness: 0.75, roughness: 0.3 })
-    );
+    const earthCore = new THREE.Mesh(new THREE.SphereGeometry(1.35, 128, 128), new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(ct), emissive: 0x113355, emissiveIntensity: 0.45, metalness: 0.75, roughness: 0.3 }));
     scene.add(earthCore);
-
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.85, 0.08, 64, 300),
-      new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0xff4400, emissiveIntensity: 0.55, metalness: 0.9 }));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.85, 0.08, 64, 300), new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0xff4400, emissiveIntensity: 0.55, metalness: 0.9 }));
     ring.rotation.x = Math.PI / 2.2; ring.rotation.z = 0.3; scene.add(ring);
-
-    const outerRing = new THREE.Mesh(new THREE.TorusGeometry(2.25, 0.05, 64, 400),
-      new THREE.MeshStandardMaterial({ color: 0x88ccff, emissive: 0x2266aa, emissiveIntensity: 0.4 }));
+    const outerRing = new THREE.Mesh(new THREE.TorusGeometry(2.25, 0.05, 64, 400), new THREE.MeshStandardMaterial({ color: 0x88ccff, emissive: 0x2266aa, emissiveIntensity: 0.4 }));
     outerRing.rotation.x = Math.PI / 1.8; scene.add(outerRing);
-
-    const holoGrid = new THREE.Mesh(new THREE.SphereGeometry(2.45, 32, 32),
-      new THREE.MeshBasicMaterial({ color: 0x44aaff, wireframe: true, transparent: true, opacity: 0.13 }));
+    const holoGrid = new THREE.Mesh(new THREE.SphereGeometry(2.45, 32, 32), new THREE.MeshBasicMaterial({ color: 0x44aaff, wireframe: true, transparent: true, opacity: 0.13 }));
     scene.add(holoGrid);
-
-    // Particles helper
     function makeParticles(count, positionFn, color, size) {
       const geo = new THREE.BufferGeometry();
       const pos = new Float32Array(count * 3);
@@ -288,80 +397,41 @@
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       return new THREE.Points(geo, new THREE.PointsMaterial({ color, size, transparent: true, blending: THREE.AdditiveBlending }));
     }
-
-    const particleField = makeParticles(1800, () => {
-      const r = 3.5 + Math.random()*2.5, t = Math.random()*Math.PI*2, p = Math.acos(2*Math.random()-1);
-      return [r*Math.sin(p)*Math.cos(t), r*Math.sin(p)*Math.sin(t)*0.6, r*Math.cos(p)];
-    }, 0xffaa66, 0.045);
+    const particleField = makeParticles(1800, () => { const r = 3.5+Math.random()*2.5, t = Math.random()*Math.PI*2, p = Math.acos(2*Math.random()-1); return [r*Math.sin(p)*Math.cos(t), r*Math.sin(p)*Math.sin(t)*0.6, r*Math.cos(p)]; }, 0xffaa66, 0.045);
     scene.add(particleField);
-
-    const dustField = makeParticles(2400, () => [
-      (Math.random()-.5)*14, (Math.random()-.5)*8, (Math.random()-.5)*12-3
-    ], 0xffdd88, 0.025);
+    const dustField = makeParticles(2400, () => [(Math.random()-.5)*14, (Math.random()-.5)*8, (Math.random()-.5)*12-3], 0xffdd88, 0.025);
     scene.add(dustField);
-
-    const starsField = makeParticles(1500, () => [
-      (Math.random()-.5)*200, (Math.random()-.5)*100, (Math.random()-.5)*80-40
-    ], 0xcceeff, 0.08);
+    const starsField = makeParticles(1500, () => [(Math.random()-.5)*200, (Math.random()-.5)*100, (Math.random()-.5)*80-40], 0xcceeff, 0.08);
     scene.add(starsField);
-
-    const ringParticlesObj = makeParticles(800, i => {
-      const a = (i/800)*Math.PI*2;
-      return [Math.cos(a)*2.6, Math.sin(a)*2.6*0.3, Math.sin(a)*2.6*0.5];
-    }, 0xffaa88, 0.04);
+    const ringParticlesObj = makeParticles(800, i => { const a = (i/800)*Math.PI*2; return [Math.cos(a)*2.6, Math.sin(a)*2.6*0.3, Math.sin(a)*2.6*0.5]; }, 0xffaa88, 0.04);
     scene.add(ringParticlesObj);
-
-    // Satellites
     const satellites = Array.from({ length: 24 }, (_, i) => {
-      const sat = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12),
-        new THREE.MeshStandardMaterial({ color: 0xffbb55, emissive: 0x442200, metalness: 0.85 }));
-      sat.userData = { radius: 2.95, speed: 0.005+Math.random()*0.003, angle: (i/24)*Math.PI*2, yOffset: (Math.random()-.5)*1.2 };
+      const sat = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.12,0.12), new THREE.MeshStandardMaterial({ color:0xffbb55, emissive:0x442200, metalness:0.85 }));
+      sat.userData = { radius:2.95, speed:0.005+Math.random()*0.003, angle:(i/24)*Math.PI*2, yOffset:(Math.random()-.5)*1.2 };
       scene.add(sat); return sat;
     });
-
-    let mouseX = 0, mouseY = 0;
-    document.addEventListener('mousemove', e => {
-      mouseX = (e.clientX/window.innerWidth)*2-1;
-      mouseY = (e.clientY/window.innerHeight)*2-1;
-    });
-
-    let time = 0;
+    let mouseX=0, mouseY=0;
+    document.addEventListener('mousemove', e => { mouseX=(e.clientX/window.innerWidth)*2-1; mouseY=(e.clientY/window.innerHeight)*2-1; });
+    let time=0;
     function animate() {
-      requestAnimationFrame(animate); time += 0.012;
-      earthCore.rotation.y += 0.004;
-      earthCore.rotation.x = Math.sin(time*.2)*.05;
-      ring.rotation.z += 0.008; ring.rotation.y += 0.003;
-      outerRing.rotation.x += 0.005; outerRing.rotation.z += 0.004;
-      holoGrid.rotation.y += 0.001;
-      particleField.rotation.y += 0.0015;
-      particleField.rotation.x = Math.sin(time*.1)*.1;
-      dustField.rotation.y += 0.0008; dustField.rotation.z += 0.0004;
-      ringParticlesObj.rotation.y += 0.01; ringParticlesObj.rotation.x += 0.005;
-      starsField.rotation.y -= 0.0002;
-      satellites.forEach(s => {
-        s.userData.angle += s.userData.speed;
-        s.position.set(
-          Math.cos(s.userData.angle)*s.userData.radius,
-          Math.sin(s.userData.angle*1.7)*.5 + s.userData.yOffset*.6,
-          Math.sin(s.userData.angle)*s.userData.radius
-        );
-        s.rotation.x += 0.05; s.rotation.y += 0.03;
-      });
-      camera.position.x += (mouseX*.3 - camera.position.x)*.05;
-      camera.position.y += (-mouseY*.2 - camera.position.y)*.05;
-      camera.lookAt(0, 0.2, 0);
-      goldLight.intensity = 0.7 + Math.sin(time*3)*.2;
+      requestAnimationFrame(animate); time+=0.012;
+      earthCore.rotation.y+=0.004; earthCore.rotation.x=Math.sin(time*.2)*.05;
+      ring.rotation.z+=0.008; ring.rotation.y+=0.003;
+      outerRing.rotation.x+=0.005; outerRing.rotation.z+=0.004;
+      holoGrid.rotation.y+=0.001;
+      particleField.rotation.y+=0.0015; particleField.rotation.x=Math.sin(time*.1)*.1;
+      dustField.rotation.y+=0.0008; dustField.rotation.z+=0.0004;
+      ringParticlesObj.rotation.y+=0.01; ringParticlesObj.rotation.x+=0.005;
+      starsField.rotation.y-=0.0002;
+      satellites.forEach(s => { s.userData.angle += s.userData.speed; s.position.set(Math.cos(s.userData.angle)*s.userData.radius, Math.sin(s.userData.angle*1.7)*.5+s.userData.yOffset*.6, Math.sin(s.userData.angle)*s.userData.radius); s.rotation.x+=0.05; s.rotation.y+=0.03; });
+      camera.position.x += (mouseX*.3 - camera.position.x)*.05; camera.position.y += (-mouseY*.2 - camera.position.y)*.05; camera.lookAt(0,0.2,0);
+      goldLight.intensity = 0.7+Math.sin(time*3)*.2;
       renderer.render(scene, camera);
     }
-
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x000000, 0);
-    window.addEventListener('resize', () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-    });
+    renderer.setClearColor(0x000000,0);
+    window.addEventListener('resize', () => { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); });
     animate();
   </script>
 </body>
