@@ -30,26 +30,33 @@ app.use(express.json());
 // STATIC FILES
 // ══════════════════════════════════════════
 
+const frontendPath = path.join(__dirname, '../frontend');
+const adminPath = path.join(__dirname, '../admin');
+
+// Debug paths on startup
+console.log('Frontend path:', frontendPath);
+console.log('Admin path:', adminPath);
+
 // Serve frontend files
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(frontendPath));
 
 // Serve admin files
-app.use('/admin', express.static(path.join(__dirname, '../admin')));
+app.use('/admin', express.static(adminPath));
 
 // Explicit routes for admin pages
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, '../admin/index.html'));
+  res.sendFile(path.join(adminPath, 'index.html'));
 });
 app.get('/admin/index.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../admin/index.html'));
+  res.sendFile(path.join(adminPath, 'index.html'));
 });
 app.get('/admin/login.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../admin/login.html'));
+  res.sendFile(path.join(adminPath, 'login.html'));
 });
 
-// Serve chat widget explicitly
+// Serve chat widget
 app.get('/chatbot.js', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/chatbot.js'));
+  res.sendFile(path.join(frontendPath, 'chatbot.js'));
 });
 
 // ══════════════════════════════════════════
