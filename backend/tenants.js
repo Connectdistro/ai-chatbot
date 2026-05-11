@@ -131,6 +131,68 @@ async function deleteDocument(documentId) {
   return true;
 }
 
+// ========== BOT MANAGEMENT (new) ==========
+
+// Get all bots (library)
+async function getAllBots() {
+  const { data, error } = await supabase
+    .from('bots')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+// Create a new bot in the library
+async function createBot(botData) {
+  const { data, error } = await supabase
+    .from('bots')
+    .insert([{
+      name: botData.name,
+      description: botData.description || '',
+      bot_name: botData.botName,
+      bot_color: botData.botColor || '#DAA520',
+      system_prompt: botData.systemPrompt
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Assign an existing bot to a tenant
+async function assignBotToTenant(tenantId, botId) {
+  const { data, error } = await supabase
+    .from('tenant_bots')
+    .insert([{ tenant_id: tenantId, bot_id: botId }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Get all bots assigned to a specific tenant
+async function getBotsByTenant(tenantId) {
+  const { data, error } = await supabase
+    .from('tenant_bots')
+    .select('bot_id, bots(*)')
+    .eq('tenant_id', tenantId);
+  if (error) throw error;
+  // Return just the bot objects
+  return data.map(item => item.bots);
+}
+
+// Remove a bot assignment from a tenant
+async function removeBotFromTenant(tenantId, botId) {
+  const { error } = await supabase
+    .from('tenant_bots')
+    .delete()
+    .eq('tenant_id', tenantId)
+    .eq('bot_id', botId);
+  if (error) throw error;
+  return { success: true };
+}
+
 module.exports = {
   createTenant,
   getAllTenants,
@@ -140,5 +202,11 @@ module.exports = {
   deleteTenant,
   saveDocument,
   getTenantDocuments,
-  deleteDocument
+  deleteDocument,
+  // New exports
+  getAllBots,
+  createBot,
+  assignBotToTenant,
+  getBotsByTenant,
+  removeBotFromTenant
 };

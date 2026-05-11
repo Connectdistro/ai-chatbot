@@ -29,10 +29,17 @@ function searchDocuments(docs, query, nResults = 3) {
     .map(item => item.chunk);
 }
 
+/**
+ * Chat with DeepSeek using tenant documents as context.
+ * @param {string} tenantId - The tenant ID
+ * @param {string} systemPrompt - The system prompt (from assigned library bot or tenant default)
+ * @param {Array} history - Array of previous messages { role, content }
+ * @returns {Promise<string>} - The assistant's reply
+ */
 async function chat(tenantId, systemPrompt, history) {
-  const lastMessage = history[history.length - 1].content;
+  const lastMessage = history[history.length - 1]?.content || '';
 
-  // Load tenant documents and search
+  // Retrieve tenant documents and search for relevant chunks
   let context = 'No specific document context available.';
   try {
     const docs = await getTenantDocuments(tenantId);
@@ -44,6 +51,7 @@ async function chat(tenantId, systemPrompt, history) {
     console.error('Document search error:', err.message);
   }
 
+  // Build the final system prompt with context
   const fullSystemPrompt = `${systemPrompt}\n\n${context}`;
 
   const messages = [
@@ -73,7 +81,7 @@ async function chat(tenantId, systemPrompt, history) {
 
   } catch (error) {
     if (error.response) {
-      console.error('DeepSeek Error:', error.response.status, JSON.stringify(error.response.data));
+      console.error('DeepSeek API Error:', error.response.status, JSON.stringify(error.response.data));
     } else {
       console.error('Chat error:', error.message);
     }

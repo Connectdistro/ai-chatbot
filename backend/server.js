@@ -12,13 +12,15 @@ const { loginAdmin, verifyToken } = require('./auth');
 const {
   createTenant, getAllTenants, getTenantById,
   getTenantByApiKey, updateTenant, deleteTenant,
-  saveDocument, getTenantDocuments, deleteDocument
+  saveDocument, getTenantDocuments, deleteDocument,
+  getAllBots, createBot, assignBotToTenant, getBotsByTenant, removeBotFromTenant
 } = require('./tenants');
 const { chat } = require('./chat');
 const {
   logAnalytics, saveMessage,
   getSessionHistory, getTenantAnalytics, saveRating
 } = require('./analytics');
+const supabase = require('./db'); // needed for direct bot update/delete
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -33,17 +35,12 @@ app.use(express.json());
 const frontendPath = path.join(__dirname, '../frontend');
 const adminPath = path.join(__dirname, '../admin');
 
-// Debug paths on startup
 console.log('Frontend path:', frontendPath);
 console.log('Admin path:', adminPath);
 
-// Serve frontend files
 app.use(express.static(frontendPath));
-
-// Serve admin files
 app.use('/admin', express.static(adminPath));
 
-// Explicit routes for admin pages
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(adminPath, 'index.html'));
 });
@@ -53,8 +50,6 @@ app.get('/admin/index.html', (req, res) => {
 app.get('/admin/login.html', (req, res) => {
   res.sendFile(path.join(adminPath, 'login.html'));
 });
-
-// Serve chat widget
 app.get('/chatbot.js', (req, res) => {
   res.sendFile(path.join(frontendPath, 'chatbot.js'));
 });
@@ -62,7 +57,6 @@ app.get('/chatbot.js', (req, res) => {
 // ══════════════════════════════════════════
 // HEALTH CHECK
 // ══════════════════════════════════════════
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Multi-tenant chatbot server running' });
 });
@@ -70,7 +64,6 @@ app.get('/api/health', (req, res) => {
 // ══════════════════════════════════════════
 // AUTH ROUTES
 // ══════════════════════════════════════════
-
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -84,8 +77,6 @@ app.post('/api/admin/login', async (req, res) => {
 // ══════════════════════════════════════════
 // TENANT MANAGEMENT ROUTES (protected)
 // ══════════════════════════════════════════
-
-// Get all tenants
 app.get('/api/admin/tenants', verifyToken, async (req, res) => {
   try {
     const tenants = await getAllTenants();
@@ -95,7 +86,6 @@ app.get('/api/admin/tenants', verifyToken, async (req, res) => {
   }
 });
 
-// Create tenant
 app.post('/api/admin/tenants', verifyToken, async (req, res) => {
   try {
     const tenant = await createTenant(req.body);
@@ -105,7 +95,6 @@ app.post('/api/admin/tenants', verifyToken, async (req, res) => {
   }
 });
 
-// Get single tenant
 app.get('/api/admin/tenants/:id', verifyToken, async (req, res) => {
   try {
     const tenant = await getTenantById(req.params.id);
@@ -115,7 +104,6 @@ app.get('/api/admin/tenants/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Update tenant
 app.put('/api/admin/tenants/:id', verifyToken, async (req, res) => {
   try {
     const tenant = await updateTenant(req.params.id, req.body);
@@ -125,7 +113,6 @@ app.put('/api/admin/tenants/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Delete tenant
 app.delete('/api/admin/tenants/:id', verifyToken, async (req, res) => {
   try {
     await deleteTenant(req.params.id);
@@ -135,7 +122,6 @@ app.delete('/api/admin/tenants/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Upload document for tenant
 app.post('/api/admin/tenants/:id/documents', verifyToken, upload.single('file'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -157,7 +143,6 @@ app.post('/api/admin/tenants/:id/documents', verifyToken, upload.single('file'),
   }
 });
 
-// Get tenant documents
 app.get('/api/admin/tenants/:id/documents', verifyToken, async (req, res) => {
   try {
     const docs = await getTenantDocuments(req.params.id);
@@ -167,7 +152,6 @@ app.get('/api/admin/tenants/:id/documents', verifyToken, async (req, res) => {
   }
 });
 
-// Delete document
 app.delete('/api/admin/documents/:docId', verifyToken, async (req, res) => {
   try {
     await deleteDocument(req.params.docId);
@@ -177,7 +161,6 @@ app.delete('/api/admin/documents/:docId', verifyToken, async (req, res) => {
   }
 });
 
-// Get tenant analytics
 app.get('/api/admin/tenants/:id/analytics', verifyToken, async (req, res) => {
   try {
     const analytics = await getTenantAnalytics(req.params.id);
@@ -188,10 +171,127 @@ app.get('/api/admin/tenants/:id/analytics', verifyToken, async (req, res) => {
 });
 
 // ══════════════════════════════════════════
+// BOT MANAGEMENT ROUTES
+// ══════════════════════════════════════════
+
+// Get all bots (library)
+app.get('/api/admin/bots', verifyToken, async (req, res) => {
+  try {
+    const bots = await getAllBots();
+    res.json(bots);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create a new bot
+app.post('/api/admin/bots', verifyToken, async (req, res) => {
+  try {
+    const bot = await createBot(req.body);
+    res.json(bot);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update a bot
+app.put('/api/admin/bots/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, botName, botColor, systemPrompt } = req.body;
+    const { data, error } = await supabase
+      .from('bots')
+      .update({
+        name,
+        description,
+        bot_name: botName,
+        bot_color: botColor,
+        system_prompt: systemPrompt
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a bot
+app.delete('/api/admin/bots/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    // First delete any assignments to avoid foreign key conflicts
+    await supabase.from('tenant_bots').delete().eq('bot_id', id);
+    const { error } = await supabase.from('bots').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Assign a bot to a tenant
+app.post('/api/admin/tenants/:tenantId/bots/:botId', verifyToken, async (req, res) => {
+  try {
+    const { tenantId, botId } = req.params;
+    const assignment = await assignBotToTenant(tenantId, parseInt(botId));
+    res.json({ success: true, assignment });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all bots assigned to a specific tenant
+app.get('/api/admin/tenants/:tenantId/bots', verifyToken, async (req, res) => {
+  try {
+    const bots = await getBotsByTenant(req.params.tenantId);
+    res.json(bots);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Remove a bot from a tenant
+app.delete('/api/admin/tenants/:tenantId/bots/:botId', verifyToken, async (req, res) => {
+  try {
+    const { tenantId, botId } = req.params;
+    await removeBotFromTenant(tenantId, parseInt(botId));
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ══════════════════════════════════════════
+// HELPER: Get effective bot config for a tenant
+// Uses first assigned library bot, otherwise falls back to tenant's own config
+// ══════════════════════════════════════════
+async function getEffectiveBotConfig(tenantId) {
+  const assignedBots = await getBotsByTenant(tenantId);
+  if (assignedBots && assignedBots.length > 0) {
+    // Use the first assigned bot from the library
+    return {
+      bot_name: assignedBots[0].bot_name,
+      bot_color: assignedBots[0].bot_color,
+      system_prompt: assignedBots[0].system_prompt
+    };
+  }
+  // Fallback to tenant's own config (legacy)
+  const tenant = await getTenantById(tenantId);
+  return {
+    bot_name: tenant.bot_name,
+    bot_color: tenant.bot_color,
+    system_prompt: tenant.system_prompt
+  };
+}
+
+// ══════════════════════════════════════════
 // PUBLIC CHAT ROUTES (per tenant)
 // ══════════════════════════════════════════
 
-// Tenant chat
+// Tenant chat – now uses assigned library bots if available
 app.post('/api/chat/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
@@ -201,14 +301,18 @@ app.post('/api/chat/:tenantId', async (req, res) => {
 
     const tenant = await getTenantById(tenantId);
     if (!tenant || !tenant.is_active) {
-      return res.status(404).json({ error: 'Chatbot not found or inactive' });
+      return res.status(404). json({ error: 'Chatbot not found or inactive' });
     }
+
+    // Get effective bot config (library bot first, then tenant's own)
+    const botConfig = await getEffectiveBotConfig(tenantId);
 
     const sid = sessionId || uuidv4();
     const history = await getSessionHistory(tenantId, sid);
     history.push({ role: 'user', content: message });
 
-    const reply = await chat(tenantId, tenant.system_prompt, history);
+    // Use botConfig.system_prompt for the chat
+    const reply = await chat(tenantId, botConfig.system_prompt, history);
 
     await saveMessage(tenantId, sid, 'user', message);
     await saveMessage(tenantId, sid, 'assistant', reply);
