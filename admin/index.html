@@ -2,175 +2,728 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nebula AI — Admin Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Nebula AI — Admin Nexus</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    :root{
-      --gold:#DAA520;--gold-bright:#FFD700;--cyan:#00f5ff;
-      --dark:#03050b;--panel:rgba(10,20,40,0.85);--border:rgba(218,165,32,0.2);
-      --text:rgba(255,255,255,0.9);--muted:rgba(255,255,255,0.45);
-      --green:#10B981;--rose:#F43F5E;--blue:#3B82F6;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    body{font-family:'Syne',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;display:flex;}
 
-    /* ── SIDEBAR ── */
-    .sidebar{
-      width:240px;min-height:100vh;background:rgba(5,10,25,0.95);
-      border-right:1px solid var(--border);display:flex;flex-direction:column;
-      padding:1.5rem 0;position:fixed;top:0;left:0;bottom:0;z-index:100;
+    :root {
+      --gold: #DAA520;
+      --gold-bright: #FFD700;
+      --gold-dim: rgba(218, 165, 32, 0.12);
+      --cyan: #00f5ff;
+      --dark: #03050b;
+      --panel-glass: rgba(6, 14, 30, 0.65);
+      --border: rgba(218, 165, 32, 0.22);
+      --border-glow: rgba(218, 165, 32, 0.5);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.45);
+      --green: #10B981;
+      --rose: #F43F5E;
+      --blue: #3B82F6;
+      --sidebar-width: 260px;
+      --transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     }
-    .sidebar-logo{
-      font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;
-      background:linear-gradient(90deg,var(--gold-bright),var(--cyan));
-      -webkit-background-clip:text;background-clip:text;color:transparent;
-      padding:0 1.5rem 1.5rem;border-bottom:1px solid var(--border);
-      letter-spacing:0.15em;
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    .sidebar-logo span{display:block;font-size:0.6rem;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.2em;margin-top:0.3rem;}
-    .nav-section{padding:1.2rem 1rem 0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;}
-    .nav-item{
-      display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.5rem;
-      cursor:pointer;transition:all 0.2s;border-left:2px solid transparent;
-      font-size:0.88rem;color:var(--muted);
+
+    /* ========= THREE.JS CANVAS BACKGROUND ========= */
+    #space-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 30% 20%, #0a1628, #020408);
     }
-    .nav-item:hover{color:var(--text);background:rgba(218,165,32,0.06);}
-    .nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(218,165,32,0.08);}
-    .nav-item .icon{font-size:1rem;width:20px;text-align:center;}
-    .sidebar-footer{margin-top:auto;padding:1.5rem;border-top:1px solid var(--border);}
-    .logout-btn{
-      width:100%;padding:0.7rem;background:rgba(244,63,94,0.1);
-      border:1px solid rgba(244,63,94,0.3);border-radius:8px;
-      color:#f87171;font-family:'JetBrains Mono',monospace;font-size:0.72rem;
-      letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;
+
+    /* ========= SIDEBAR (GLASS) ========= */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: rgba(5, 10, 25, 0.85);
+      backdrop-filter: blur(16px);
+      border-right: 1px solid var(--border);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition);
+      transform: translateX(0);
     }
-    .logout-btn:hover{background:rgba(244,63,94,0.2);}
 
-    /* ── MAIN ── */
-    .main{margin-left:240px;flex:1;padding:2rem;min-height:100vh;}
-
-    /* ── TOP BAR ── */
-    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;}
-    .page-title{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:700;color:#fff;}
-    .page-title span{display:block;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;margin-top:0.3rem;font-weight:400;}
-    .topbar-right{display:flex;align-items:center;gap:1rem;}
-    .status-pill{
-      display:flex;align-items:center;gap:0.5rem;padding:0.4rem 1rem;
-      background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
-      border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:#34d399;
+    .sidebar-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 1rem;
+      font-weight: 900;
+      background: linear-gradient(90deg, var(--gold-bright), var(--cyan));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      padding: 1.5rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.15em;
     }
-    .status-dot{width:6px;height:6px;border-radius:50%;background:#10B981;box-shadow:0 0 6px #10B981;animation:pulse 2s infinite;}
-    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
-    /* ── STAT CARDS ── */
-    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem;}
-    @media(max-width:1100px){.stats-grid{grid-template-columns:repeat(2,1fr);}}
-    .stat-card{
-      background:var(--panel);border:1px solid var(--border);border-radius:12px;
-      padding:1.4rem;position:relative;overflow:hidden;
+    .sidebar-logo span {
+      display: block;
+      font-size: 0.6rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.2em;
+      margin-top: 0.3rem;
     }
-    .stat-card::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:2px;
-      background:linear-gradient(90deg,transparent,var(--gold),transparent);
+
+    .nav-section {
+      padding: 1.5rem 1rem 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
     }
-    .stat-label{font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;margin-bottom:0.75rem;}
-    .stat-value{font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:var(--gold-bright);}
-    .stat-sub{font-size:0.75rem;color:var(--muted);margin-top:0.4rem;}
 
-    /* ── SECTION ── */
-    .section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;}
-    .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
-    .section-title{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;letter-spacing:0.1em;color:#fff;}
-
-    /* ── BUTTONS ── */
-    .btn{padding:0.65rem 1.4rem;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;border:none;}
-    .btn-primary{background:linear-gradient(135deg,var(--gold),#b8860b);color:#000;font-weight:700;}
-    .btn-primary:hover{opacity:0.85;}
-    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
-    .btn-ghost:hover{border-color:var(--gold);color:var(--gold);}
-    .btn-danger{background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);color:#f87171;}
-    .btn-danger:hover{background:rgba(244,63,94,0.2);}
-    .btn-sm{padding:0.4rem 0.9rem;font-size:0.65rem;}
-    .btn-success{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);color:#34d399;}
-
-    /* ── TABLE ── */
-    .table-wrap{overflow-x:auto;}
-    table{width:100%;border-collapse:collapse;}
-    th{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0.75rem 1rem;text-align:left;border-bottom:1px solid var(--border);}
-    td{padding:0.85rem 1rem;font-size:0.85rem;border-bottom:1px solid rgba(218,165,32,0.07);vertical-align:middle;}
-    tr:hover td{background:rgba(218,165,32,0.03);}
-    .badge{display:inline-block;padding:0.25rem 0.6rem;border-radius:20px;font-size:0.65rem;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;}
-    .badge-active{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);}
-    .badge-inactive{background:rgba(244,63,94,0.15);color:#f87171;border:1px solid rgba(244,63,94,0.3);}
-
-    /* ── MODAL ── */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);z-index:1000;display:none;align-items:center;justify-content:center;}
-    .modal-overlay.open{display:flex;}
-    .modal{background:#080f20;border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;}
-    .modal-title{font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:#fff;margin-bottom:1.5rem;}
-    .form-group{margin-bottom:1.2rem;}
-    .form-group label{display:block;font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem;}
-    .form-group input,.form-group textarea,.form-group select{
-      width:100%;padding:0.8rem 1rem;
-      background:rgba(255,255,255,0.05);border:1px solid var(--border);
-      border-radius:8px;color:#fff;font-size:0.9rem;outline:none;
-      transition:border-color 0.2s;font-family:'Syne',sans-serif;
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+      border-left: 2px solid transparent;
+      font-size: 0.88rem;
+      color: var(--muted);
     }
-    .form-group input:focus,.form-group textarea:focus{border-color:var(--gold);}
-    .form-group textarea{min-height:100px;resize:vertical;}
-    .modal-actions{display:flex;gap:1rem;justify-content:flex-end;margin-top:1.5rem;}
 
-    /* ── EMBED CODE ── */
-    .embed-box{
-      background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;
-      padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;
-      color:#a0d8ef;line-height:1.6;word-break:break-all;position:relative;
+    .nav-item:hover {
+      color: var(--text);
+      background: rgba(218, 165, 32, 0.06);
     }
-    .copy-btn{position:absolute;top:0.5rem;right:0.5rem;}
 
-    /* ── ANALYTICS PANEL ── */
-    .analytics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.2rem;}
-    @media(max-width:800px){.analytics-grid{grid-template-columns:1fr;}}
-    .a-card{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:1.2rem;text-align:center;}
-    .a-card .val{font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:var(--gold-bright);}
-    .a-card .lbl{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-top:0.4rem;}
-    .questions-list{max-height:220px;overflow-y:auto;}
-    .q-item{padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);font-size:0.82rem;color:var(--muted);}
-    .q-item:last-child{border-bottom:none;}
-
-    /* ── DOCS LIST ── */
-    .doc-item{display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0.5rem;border-bottom:1px solid var(--border);}
-    .doc-item:last-child{border-bottom:none;}
-    .doc-name{font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--cyan);}
-
-    /* ── PAGE VIEWS ── */
-    .page-view{display:none;}
-    .page-view.active{display:block;}
-
-    /* ── COLOR PREVIEW ── */
-    .color-preview{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);display:inline-block;vertical-align:middle;margin-left:0.5rem;}
-
-    /* ── TOAST ── */
-    .toast{
-      position:fixed;bottom:2rem;right:2rem;z-index:9999;
-      background:#080f20;border:1px solid var(--gold);border-radius:10px;
-      padding:0.9rem 1.4rem;font-family:'JetBrains Mono',monospace;font-size:0.78rem;
-      color:var(--gold);display:none;animation:slideIn 0.3s ease;
+    .nav-item.active {
+      color: var(--gold);
+      border-left-color: var(--gold);
+      background: rgba(218, 165, 32, 0.08);
     }
-    @keyframes slideIn{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
 
-    /* assignment list styling */
-    .assigned-bot-item{display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border);}
-    .assigned-bot-name{font-weight:bold;color:var(--cyan);}
-    .available-bot-item{cursor:pointer;padding:0.6rem;margin:0.3rem 0;background:rgba(255,255,255,0.03);border-radius:6px;}
-    .available-bot-item:hover{background:rgba(218,165,32,0.1);}
+    .nav-item .icon {
+      font-size: 1rem;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .logout-btn {
+      width: 100%;
+      padding: 0.7rem;
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      border-radius: 8px;
+      color: #f87171;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .logout-btn:hover {
+      background: rgba(244, 63, 94, 0.2);
+    }
+
+    /* ========= MOBILE SIDEBAR ========= */
+    .mobile-toggle {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      z-index: 1001;
+      background: rgba(5, 10, 25, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .mobile-toggle span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--gold);
+      margin: 4px 0;
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(3px);
+      z-index: 999;
+      display: none;
+    }
+
+    /* ========= MAIN CONTENT ========= */
+    .main {
+      position: relative;
+      z-index: 2;
+      margin-left: var(--sidebar-width);
+      padding: 1.5rem 2rem;
+      min-height: 100vh;
+      transition: margin var(--transition);
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .page-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    .page-title span {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      margin-top: 0.3rem;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      background: rgba(16, 185, 129, 0.1);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: #34d399;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 6px #10B981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Stats grid & cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .stat-card {
+      background: var(--panel-glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.4rem;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      transform: scaleX(0);
+      transition: transform 0.4s;
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-glow);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+    }
+
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gold-bright);
+    }
+
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    /* Sections */
+    .section {
+      background: var(--panel-glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      transition: var(--transition);
+    }
+
+    .section:hover {
+      border-color: var(--border-glow);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #fff;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 0.65rem 1.4rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), #b8860b);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(218, 165, 32, 0.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(218,165,32,0.05);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #f87171;
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.2);
+    }
+
+    .btn-sm {
+      padding: 0.4rem 0.9rem;
+      font-size: 0.65rem;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(218, 165, 32, 0.07);
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: rgba(218, 165, 32, 0.03);
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.1em;
+    }
+
+    .badge-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-inactive {
+      background: rgba(244, 63, 94, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    /* Modals (glass) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: rgba(8, 15, 32, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+      font-family: 'Syne', sans-serif;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--gold);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+
+    /* Embed & other */
+    .embed-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: #a0d8ef;
+      line-height: 1.6;
+      word-break: break-all;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+    }
+
+    /* Analytics cards */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+
+    @media (max-width: 800px) {
+      .analytics-grid { grid-template-columns: 1fr; }
+    }
+
+    .a-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .a-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    .a-card .val {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--gold-bright);
+    }
+
+    .questions-list {
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .q-item {
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    /* Documents & bot assignment */
+    .doc-item,
+    .assigned-bot-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-name,
+    .assigned-bot-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--cyan);
+    }
+
+    .available-bot-item {
+      cursor: pointer;
+      padding: 0.6rem;
+      margin: 0.3rem 0;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      transition: var(--transition);
+    }
+
+    .available-bot-item:hover {
+      background: rgba(218, 165, 32, 0.1);
+      transform: translateX(4px);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      background: #080f20;
+      border: 1px solid var(--gold);
+      border-radius: 10px;
+      padding: 0.9rem 1.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--gold);
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Page transitions */
+    .page-view {
+      display: none;
+    }
+
+    .page-view.active {
+      display: block;
+      animation: fadePage 0.4s ease;
+    }
+
+    @keyframes fadePage {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .mobile-toggle {
+        display: block;
+      }
+      .sidebar-overlay.open {
+        display: block;
+      }
+      .main {
+        margin-left: 0;
+        padding: 1rem;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+      .section-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+      .modal {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--dark);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--gold);
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
 
+<canvas id="space-canvas"></canvas>
+
+<!-- Mobile Toggle -->
+<div class="mobile-toggle" id="mobileToggle">
+  <span></span><span></span><span></span>
+</div>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     NEBULA AI
     <span>ADMIN CONTROL PANEL</span>
@@ -197,200 +750,185 @@
   </div>
 </aside>
 
-<!-- MAIN -->
 <main class="main">
-
-  <!-- TOP BAR -->
   <div class="topbar">
     <div class="page-title">
       Dashboard
       <span id="page-subtitle">OVERVIEW · ALL SYSTEMS</span>
     </div>
-    <div class="topbar-right">
-      <div class="status-pill">
-        <div class="status-dot"></div>
-        SYSTEM ONLINE
-      </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      SYSTEM ONLINE
     </div>
   </div>
 
-  <!-- ── DASHBOARD PAGE ── -->
+  <!-- DASHBOARD -->
   <div class="page-view active" id="page-dashboard">
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Clients</div>
-        <div class="stat-value" id="stat-clients">—</div>
-        <div class="stat-sub">Active tenants</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Bots</div>
-        <div class="stat-value" id="stat-bots">—</div>
-        <div class="stat-sub">Library bots</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Messages</div>
-        <div class="stat-value" id="stat-messages">—</div>
-        <div class="stat-sub">Across all clients</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Avg Rating</div>
-        <div class="stat-value" id="stat-rating">—</div>
-        <div class="stat-sub">User satisfaction</div>
-      </div>
+      <div class="stat-card"><div class="stat-label">Total Clients</div><div class="stat-value" id="stat-clients">—</div><div class="stat-sub">Active tenants</div></div>
+      <div class="stat-card"><div class="stat-label">Total Bots</div><div class="stat-value" id="stat-bots">—</div><div class="stat-sub">Library bots</div></div>
+      <div class="stat-card"><div class="stat-label">Total Messages</div><div class="stat-value" id="stat-messages">—</div><div class="stat-sub">Across all clients</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Rating</div><div class="stat-value" id="stat-rating">—</div><div class="stat-sub">User satisfaction</div></div>
     </div>
-
     <div class="section">
-      <div class="section-header">
-        <div class="section-title">Recent Clients</div>
-        <button class="btn btn-primary btn-sm" onclick="showPage('clients')">View All</button>
-      </div>
+      <div class="section-header"><div class="section-title">Recent Clients</div><button class="btn btn-primary btn-sm" onclick="showPage('clients')">View All</button></div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Client Name</th><th>Bot Name</th><th>Website</th><th>Status</th><th>Created</th></tr>
-          </thead>
-          <tbody id="dashboard-clients-table">
-            <tr><td colspan="5" style="color:var(--muted);text-align:center;">Loading...</td></tr>
-          </tbody>
-        </table>
+        <table><thead><tr><th>Client Name</th><th>Bot Name</th><th>Website</th><th>Status</th><th>Created</th></tr></thead>
+        <tbody id="dashboard-clients-table"><tr><td colspan="5" style="color:var(--muted);text-align:center;">Loading...<\/td></tr></tbody>
+      </table>
       </div>
     </div>
   </div>
 
-  <!-- ── CLIENTS PAGE ── -->
+  <!-- CLIENTS -->
   <div class="page-view" id="page-clients">
     <div class="section">
-      <div class="section-header">
-        <div class="section-title">All Clients</div>
-        <button class="btn btn-primary" onclick="openCreateModal()">+ New Client</button>
-      </div>
+      <div class="section-header"><div class="section-title">All Clients</div><button class="btn btn-primary" onclick="openCreateModal()">+ New Client</button></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Client Name</th><th>Bot Name</th><th>Website</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="clients-table"><tr><td colspan="5">Loading...</td></tr></tbody>
+          <tbody id="clients-table"><tr><td colspan="5">Loading...<\/td></tr></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ── BOTS PAGE ── -->
+  <!-- BOTS -->
   <div class="page-view" id="page-bots">
     <div class="section">
-      <div class="section-header">
-        <div class="section-title">Bot Library</div>
-        <button class="btn btn-primary" onclick="openBotModal()">+ New Bot</button>
-      </div>
+      <div class="section-header"><div class="section-title">Bot Library</div><button class="btn btn-primary" onclick="openBotModal()">+ New Bot</button></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Name</th><th>Description</th><th>Bot Name</th><th>Color</th><th>Created</th><th>Actions</th></tr></thead>
-          <tbody id="bots-table"><tr><td colspan="6">Loading...</td></tr></tbody>
+          <tbody id="bots-table"><tr><td colspan="6">Loading...<\/td></tr></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ── ANALYTICS PAGE ── -->
+  <!-- ANALYTICS -->
   <div class="page-view" id="page-analytics">
     <div class="section">
-      <div class="section-header">
-        <div class="section-title">Analytics</div>
-        <select id="analytics-tenant-select" onchange="loadAnalytics()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;padding:0.5rem 1rem;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;">
-          <option value="">Select a client...</option>
-        </select>
-      </div>
+      <div class="section-header"><div class="section-title">Analytics</div><select id="analytics-tenant-select" onchange="loadAnalytics()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:#fff;padding:0.5rem 1rem;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;"><option value="">Select a client...</option></select></div>
       <div id="analytics-content"><p style="color:var(--muted);text-align:center;padding:2rem;">Select a client to view analytics</p></div>
     </div>
   </div>
 
-  <!-- ── SETTINGS PAGE ── -->
+  <!-- SETTINGS -->
   <div class="page-view" id="page-settings">
     <div class="section">
       <div class="section-header"><div class="section-title">System Settings</div></div>
-      <div style="padding:1rem 0;">
-        <div class="form-group"><label>Admin Username</label><input type="text" value="admin" disabled style="opacity:0.5;"/></div>
-        <div class="form-group"><label>Server URL</label><input type="text" id="server-url" value="" /></div>
-        <div class="form-group"><label>Default Bot Color</label><input type="color" value="#DAA520" id="default-color"/></div>
-        <button class="btn btn-primary" onclick="toast('Settings saved!')">Save Settings</button>
-      </div>
+      <div style="padding:1rem 0;"><div class="form-group"><label>Admin Username</label><input type="text" value="admin" disabled style="opacity:0.5;"/></div><div class="form-group"><label>Server URL</label><input type="text" id="server-url" value="" /></div><div class="form-group"><label>Default Bot Color</label><input type="color" value="#DAA520" id="default-color"/></div><button class="btn btn-primary" onclick="toast('Settings saved!')">Save Settings</button></div>
     </div>
   </div>
-
 </main>
 
-<!-- ── CREATE/EDIT CLIENT MODAL ── -->
-<div class="modal-overlay" id="client-modal">
-  <div class="modal"><div class="modal-title" id="modal-title">New Client</div>
-    <div class="form-group"><label>Company Name *</label><input type="text" id="f-name"/></div>
-    <div class="form-group"><label>Website URL</label><input type="text" id="f-website"/></div>
-    <div class="form-group"><label>Bot Name *</label><input type="text" id="f-botname"/></div>
-    <div class="form-group"><label>Bot Color</label><input type="color" id="f-color" value="#DAA520"/></div>
-    <div class="form-group"><label>System Prompt *</label><textarea id="f-prompt"></textarea></div>
-    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('client-modal')">Cancel</button><button class="btn btn-primary" onclick="saveClient()">Create Client</button></div>
-  </div>
-</div>
+<!-- MODALS -->
+<div class="modal-overlay" id="client-modal"><div class="modal"><div class="modal-title" id="modal-title">New Client</div><div class="form-group"><label>Company Name *</label><input type="text" id="f-name"/></div><div class="form-group"><label>Website URL</label><input type="text" id="f-website"/></div><div class="form-group"><label>Bot Name *</label><input type="text" id="f-botname"/></div><div class="form-group"><label>Bot Color</label><input type="color" id="f-color" value="#DAA520"/></div><div class="form-group"><label>System Prompt *</label><textarea id="f-prompt"></textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('client-modal')">Cancel</button><button class="btn btn-primary" onclick="saveClient()">Create Client</button></div></div></div>
 
-<!-- ── BOT CREATE/EDIT MODAL ── -->
-<div class="modal-overlay" id="bot-modal">
-  <div class="modal"><div class="modal-title" id="bot-modal-title">New Bot</div>
-    <input type="hidden" id="bot-edit-id" value=""/>
-    <div class="form-group"><label>Bot Display Name</label><input type="text" id="bot-name" placeholder="e.g., Sales Assistant"/></div>
-    <div class="form-group"><label>Description</label><textarea id="bot-description" placeholder="Brief description"></textarea></div>
-    <div class="form-group"><label>Bot Name (how it appears in chat)</label><input type="text" id="bot-botname" placeholder="e.g., SalesBot"/></div>
-    <div class="form-group"><label>Bot Color</label><input type="color" id="bot-color" value="#DAA520"/></div>
-    <div class="form-group"><label>System Prompt</label><textarea id="bot-prompt" placeholder="You are a helpful sales assistant..."></textarea></div>
-    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('bot-modal')">Cancel</button><button class="btn btn-primary" onclick="saveBot()">Save Bot</button></div>
-  </div>
-</div>
+<div class="modal-overlay" id="bot-modal"><div class="modal"><div class="modal-title" id="bot-modal-title">New Bot</div><input type="hidden" id="bot-edit-id"/><div class="form-group"><label>Bot Display Name</label><input type="text" id="bot-name" placeholder="e.g., Sales Assistant"/></div><div class="form-group"><label>Description</label><textarea id="bot-description" placeholder="Brief description"></textarea></div><div class="form-group"><label>Bot Name (how it appears in chat)</label><input type="text" id="bot-botname" placeholder="e.g., SalesBot"/></div><div class="form-group"><label>Bot Color</label><input type="color" id="bot-color" value="#DAA520"/></div><div class="form-group"><label>System Prompt</label><textarea id="bot-prompt" placeholder="You are a helpful sales assistant..."></textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('bot-modal')">Cancel</button><button class="btn btn-primary" onclick="saveBot()">Save Bot</button></div></div></div>
 
-<!-- ── CLIENT DETAIL MODAL (ADDED BOTS TAB) ── -->
-<div class="modal-overlay" id="detail-modal">
-  <div class="modal" style="max-width:720px;">
-    <div class="modal-title" id="detail-title">Client Details</div>
-    <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;">
-      <button class="btn btn-primary btn-sm" onclick="switchTab('tab-info')" id="tab-btn-info">Info</button>
-      <button class="btn btn-ghost btn-sm" onclick="switchTab('tab-docs')" id="tab-btn-docs">Documents</button>
-      <button class="btn btn-ghost btn-sm" onclick="switchTab('tab-bots')" id="tab-btn-bots">Bots</button>
-      <button class="btn btn-ghost btn-sm" onclick="switchTab('tab-embed')" id="tab-btn-embed">Embed</button>
-    </div>
+<div class="modal-overlay" id="detail-modal"><div class="modal" style="max-width:720px;"><div class="modal-title" id="detail-title">Client Details</div><div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="switchTab('tab-info')" id="tab-btn-info">Info</button><button class="btn btn-ghost btn-sm" onclick="switchTab('tab-docs')" id="tab-btn-docs">Documents</button><button class="btn btn-ghost btn-sm" onclick="switchTab('tab-bots')" id="tab-btn-bots">Bots</button><button class="btn btn-ghost btn-sm" onclick="switchTab('tab-embed')" id="tab-btn-embed">Embed</button></div>
+<div id="tab-info"><div class="form-group"><label>Company Name</label><input type="text" id="d-name"/></div><div class="form-group"><label>Website</label><input type="text" id="d-website"/></div><div class="form-group"><label>Bot Name</label><input type="text" id="d-botname"/></div><div class="form-group"><label>Bot Color</label><input type="color" id="d-color"/></div><div class="form-group"><label>System Prompt</label><textarea id="d-prompt" style="min-height:130px;"></textarea></div><div class="form-group"><label>Status</label><select id="d-active"><option value="true">Active</option><option value="false">Inactive</option></select></div><div class="modal-actions"><button class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete Client</button><button class="btn btn-ghost" onclick="closeModal('detail-modal')">Cancel</button><button class="btn btn-primary" onclick="updateClient()">Save Changes</button></div></div>
+<div id="tab-docs" style="display:none;"><div style="margin-bottom:1rem;"><input type="file" id="doc-upload" accept=".txt,.pdf,.md" style="display:none;" onchange="uploadDocument()"/><button class="btn btn-primary btn-sm" onclick="document.getElementById('doc-upload').click()">+ Upload Document</button><span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);margin-left:1rem;">Accepts .txt .pdf .md</span></div><div id="docs-list"><p style="color:var(--muted);font-size:0.85rem;">Loading documents...</p></div></div>
+<div id="tab-bots" style="display:none;"><div class="section-title" style="margin-bottom:0.8rem;">Assigned Bots</div><div id="assigned-bots-list"><p>Loading...</p></div><div class="section-title" style="margin:1rem 0 0.8rem;">Available Bots</div><div id="available-bots-list"><p>Loading...</p></div></div>
+<div id="tab-embed" style="display:none;"><p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">Add this code to any website before the closing &lt;/body&gt; tag:</p><div class="embed-box"><pre id="embed-code" style="white-space:pre-wrap;"></pre><button class="btn btn-ghost btn-sm copy-btn" onclick="copyEmbed()">Copy</button></div><p style="color:var(--muted);font-size:0.75rem;margin-top:1rem;">Tenant ID: <span id="embed-tenant-id" style="color:var(--gold);"></span></p></div></div></div>
 
-    <!-- Info Tab -->
-    <div id="tab-info">
-      <div class="form-group"><label>Company Name</label><input type="text" id="d-name"/></div>
-      <div class="form-group"><label>Website</label><input type="text" id="d-website"/></div>
-      <div class="form-group"><label>Bot Name</label><input type="text" id="d-botname"/></div>
-      <div class="form-group"><label>Bot Color</label><input type="color" id="d-color"/></div>
-      <div class="form-group"><label>System Prompt</label><textarea id="d-prompt" style="min-height:130px;"></textarea></div>
-      <div class="form-group"><label>Status</label><select id="d-active"><option value="true">Active</option><option value="false">Inactive</option></select></div>
-      <div class="modal-actions"><button class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete Client</button><button class="btn btn-ghost" onclick="closeModal('detail-modal')">Cancel</button><button class="btn btn-primary" onclick="updateClient()">Save Changes</button></div>
-    </div>
-
-    <!-- Documents Tab -->
-    <div id="tab-docs" style="display:none;">
-      <div style="margin-bottom:1rem;"><input type="file" id="doc-upload" accept=".txt,.pdf,.md" style="display:none;" onchange="uploadDocument()"/><button class="btn btn-primary btn-sm" onclick="document.getElementById('doc-upload').click()">+ Upload Document</button><span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);margin-left:1rem;">Accepts .txt .pdf .md</span></div>
-      <div id="docs-list"><p style="color:var(--muted);font-size:0.85rem;">Loading documents...</p></div>
-    </div>
-
-    <!-- Bots Assignment Tab -->
-    <div id="tab-bots" style="display:none;">
-      <div class="section-title" style="margin-bottom:0.8rem;">Assigned Bots</div>
-      <div id="assigned-bots-list"><p>Loading...</p></div>
-      <div class="section-title" style="margin:1rem 0 0.8rem;">Available Bots</div>
-      <div id="available-bots-list"><p>Loading...</p></div>
-    </div>
-
-    <!-- Embed Tab -->
-    <div id="tab-embed" style="display:none;">
-      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">Add this code to any website before the closing &lt;/body&gt; tag:</p>
-      <div class="embed-box"><pre id="embed-code" style="white-space:pre-wrap;"></pre><button class="btn btn-ghost btn-sm copy-btn" onclick="copyEmbed()">Copy</button></div>
-      <p style="color:var(--muted);font-size:0.75rem;margin-top:1rem;">Tenant ID: <span id="embed-tenant-id" style="color:var(--gold);"></span></p>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- Three.js animated background (same as main site) -->
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+  import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+
+  const canvas = document.getElementById('space-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020812, 0.0015);
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 1.2, 12);
+  camera.lookAt(0, 0.2, 0);
+
+  const ambient = new THREE.AmbientLight(0x111122);
+  scene.add(ambient);
+  const dirLight = new THREE.DirectionalLight(0xffdd99, 1.0);
+  dirLight.position.set(5, 8, 3);
+  scene.add(dirLight);
+  const pointLight = new THREE.PointLight(0xffaa33, 0.6);
+  pointLight.position.set(2, 3, 4);
+  scene.add(pointLight);
+
+  const core = new THREE.Mesh(new THREE.SphereGeometry(1.1, 64, 64), new THREE.MeshStandardMaterial({ color: 0x2a5f8f, emissive: 0x113355, emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.3 }));
+  scene.add(core);
+
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.06, 32, 200), new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0xff4400, emissiveIntensity: 0.4 }));
+  ring.rotation.x = Math.PI / 2.2;
+  ring.rotation.z = 0.3;
+  scene.add(ring);
+
+  const outerRing = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.03, 32, 300), new THREE.MeshStandardMaterial({ color: 0x88ccff, emissive: 0x2266aa, emissiveIntensity: 0.3 }));
+  outerRing.rotation.x = Math.PI / 1.8;
+  scene.add(outerRing);
+
+  const starGeo = new THREE.BufferGeometry();
+  const starPositions = [];
+  for (let i = 0; i < 1800; i++) {
+    starPositions.push((Math.random() - 0.5) * 200, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 80 - 30);
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(starPositions), 3));
+  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffdd88, size: 0.08, blending: THREE.AdditiveBlending }));
+  scene.add(stars);
+
+  const dustGeo = new THREE.BufferGeometry();
+  const dustPositions = [];
+  for (let i = 0; i < 800; i++) {
+    dustPositions.push((Math.random() - 0.5) * 25, (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 12 - 5);
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dustPositions), 3));
+  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xcceeff, size: 0.04, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }));
+  scene.add(dust);
+
+  let mouseX = 0, mouseY = 0;
+  document.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+    mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+  });
+
+  let time = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    time += 0.012;
+    core.rotation.y += 0.003;
+    core.rotation.x = Math.sin(time * 0.2) * 0.08;
+    ring.rotation.z += 0.007;
+    outerRing.rotation.x += 0.003;
+    outerRing.rotation.z += 0.002;
+    stars.rotation.y += 0.0005;
+    dust.rotation.x += 0.0003;
+    dust.rotation.y += 0.0002;
+    camera.position.x += (mouseX * 0.4 - camera.position.x) * 0.05;
+    camera.position.y += (-mouseY * 0.3 - camera.position.y) * 0.05;
+    camera.lookAt(0, 0.2, 0);
+    pointLight.intensity = 0.5 + Math.sin(time * 2) * 0.15;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setClearColor(0x000000, 0);
+</script>
+
 <script>
+// ---------- ALL ORIGINAL FUNCTIONALITY (unchanged) ----------
 const API = '';
 let token = localStorage.getItem('adminToken');
 let allTenants = [];
@@ -403,7 +941,31 @@ function logout() { localStorage.removeItem('adminToken'); window.location.href 
 function headers() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }; }
 function toast(msg, duration = 2500) { const el = document.getElementById('toast'); el.textContent = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', duration); }
 
-// ── PAGE NAVIGATION ──
+// ========= SIDEBAR MOBILE =========
+const mobileToggle = document.getElementById('mobileToggle');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
+}
+function openSidebar() {
+  sidebar.classList.add('open');
+  overlay.classList.add('open');
+}
+mobileToggle.addEventListener('click', () => {
+  if (sidebar.classList.contains('open')) closeSidebar();
+  else openSidebar();
+});
+overlay.addEventListener('click', closeSidebar);
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    if (window.innerWidth <= 768) closeSidebar();
+  });
+});
+
+// ========= PAGE NAVIGATION =========
 function showPage(page) {
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -419,34 +981,26 @@ function showPage(page) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ── DASHBOARD ──
+// ========= DASHBOARD =========
 async function loadDashboard() {
   const res = await fetch('/api/admin/tenants', { headers: headers() });
   const tenants = await res.json();
   allTenants = tenants;
   document.getElementById('stat-clients').textContent = tenants.length;
-  document.getElementById('stat-active').textContent = tenants.filter(t => t.is_active).length;
-  // load bots count
   const botsRes = await fetch('/api/admin/bots', { headers: headers() }).catch(() => ({ json: () => [] }));
   const bots = await botsRes.json();
   document.getElementById('stat-bots').textContent = bots.length;
-
   let totalMessages = 0;
   for (const t of tenants.slice(0, 5)) {
     try { const ar = await fetch(`/api/admin/tenants/${t.id}/analytics`, { headers: headers() }); const a = await ar.json(); totalMessages += a.totalMessages || 0; } catch {}
   }
   document.getElementById('stat-messages').textContent = totalMessages;
   document.getElementById('stat-rating').textContent = '—';
-
   const tbody = document.getElementById('dashboard-clients-table');
-  tbody.innerHTML = tenants.slice(0, 5).map(t => `
-    <tr><td>${t.name}</td><td>${t.bot_name}</td><td style="color:var(--cyan);">${t.website || '—'}</td>
-    <td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? 'ACTIVE' : 'INACTIVE'}</span></td>
-    <td>${new Date(t.created_at).toLocaleDateString()}</td></tr>
-  `).join('') || '<tr><td colspan="5">No clients</td></tr>';
+  tbody.innerHTML = tenants.slice(0, 5).map(t => `<tr><td>${t.name}</td><td>${t.bot_name}</td><td style="color:var(--cyan);">${t.website || '—'}</td><td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? 'ACTIVE' : 'INACTIVE'}</span></td><td>${new Date(t.created_at).toLocaleDateString()}</td></tr>`).join('') || '<tr><td colspan="5">No clients</td></tr>';
 }
 
-// ── CLIENTS ──
+// ========= CLIENTS =========
 async function loadClients() {
   const res = await fetch('/api/admin/tenants', { headers: headers() });
   allTenants = await res.json();
@@ -454,14 +1008,8 @@ async function loadClients() {
 }
 function renderClientsTable() {
   const tbody = document.getElementById('clients-table');
-  tbody.innerHTML = allTenants.map(t => `
-    <tr><td><strong>${t.name}</strong></td><td>${t.bot_name}</td><td style="color:var(--cyan);">${t.website || '—'}</td>
-    <td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? 'ACTIVE' : 'INACTIVE'}</span></td>
-    <td><button class="btn btn-ghost btn-sm" onclick="openDetailModal('${t.id}')">Manage</button>
-    <button class="btn btn-danger btn-sm" onclick="currentTenantId='${t.id}';confirmDelete()">Delete</button></td></tr>
-  `).join('') || '<tr><td colspan="5">No clients</td></tr>';
+  tbody.innerHTML = allTenants.map(t => `<tr><td><strong>${t.name}</strong></td><td>${t.bot_name}</td><td style="color:var(--cyan);">${t.website || '—'}</td><td><span class="badge ${t.is_active ? 'badge-active' : 'badge-inactive'}">${t.is_active ? 'ACTIVE' : 'INACTIVE'}</span></td><td><button class="btn btn-ghost btn-sm" onclick="openDetailModal('${t.id}')">Manage</button> <button class="btn btn-danger btn-sm" onclick="currentTenantId='${t.id}';confirmDelete()">Delete</button></td></tr>`).join('') || '<tr><td colspan="5">No clients</td></tr>';
 }
-
 function openCreateModal() {
   document.getElementById('modal-title').textContent = 'New Client';
   document.getElementById('f-name').value = '';
@@ -481,17 +1029,12 @@ async function saveClient() {
   if (data.id) { closeModal('client-modal'); toast('Client created'); loadClients(); loadDashboard(); } else toast('Error: ' + (data.error || 'Unknown'));
 }
 
-// ── BOTS MANAGEMENT ──
+// ========= BOTS =========
 async function loadBots() {
   const res = await fetch('/api/admin/bots', { headers: headers() });
   allBots = await res.json();
   const tbody = document.getElementById('bots-table');
-  tbody.innerHTML = allBots.map(b => `
-    <tr><td><strong>${b.name}</strong></td><td>${b.description || ''}</td><td>${b.bot_name}</td><td><div style="background:${b.bot_color};width:20px;height:20px;border-radius:50%;border:1px solid #fff;"></div></td>
-    <td>${new Date(b.created_at).toLocaleDateString()}</td>
-    <td><button class="btn btn-ghost btn-sm" onclick="editBot('${b.id}')">Edit</button>
-    <button class="btn btn-danger btn-sm" onclick="deleteBot('${b.id}')">Delete</button></td></tr>
-  `).join('') || '<tr><td colspan="6">No bots created yet</td></tr>';
+  tbody.innerHTML = allBots.map(b => `<tr><td><strong>${b.name}</strong></td><td>${b.description || ''}</td><td>${b.bot_name}</td><td><div style="background:${b.bot_color};width:20px;height:20px;border-radius:50%;border:1px solid #fff;"></div></td><td>${new Date(b.created_at).toLocaleDateString()}</td><td><button class="btn btn-ghost btn-sm" onclick="editBot('${b.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteBot('${b.id}')">Delete</button></td></tr>`).join('') || '<tr><td colspan="6">No bots created yet</td></tr>';
 }
 function openBotModal(editId = null) {
   document.getElementById('bot-edit-id').value = '';
@@ -539,7 +1082,7 @@ async function deleteBot(id) {
   if (data.success) { toast('Bot deleted'); loadBots(); loadDashboard(); } else toast('Error');
 }
 
-// ── CLIENT DETAIL MODAL (with bot assignment) ──
+// ========= CLIENT DETAIL =========
 async function openDetailModal(id) {
   currentTenantId = id;
   const t = allTenants.find(x => x.id === id);
@@ -565,25 +1108,14 @@ async function loadAssignedBots(tenantId) {
     const assigned = await res.json();
     const assignedDiv = document.getElementById('assigned-bots-list');
     if (!assigned.length) assignedDiv.innerHTML = '<p style="color:var(--muted);">No bots assigned. Use the library below.</p>';
-    else assignedDiv.innerHTML = assigned.map(b => `
-      <div class="assigned-bot-item">
-        <div><span class="assigned-bot-name">${b.name}</span><br><span style="font-size:0.7rem;color:var(--muted);">${b.bot_name}</span></div>
-        <button class="btn btn-danger btn-sm" onclick="unassignBot('${tenantId}', ${b.id})">Remove</button>
-      </div>
-    `).join('');
-    // load available bots (all bots not already assigned)
+    else assignedDiv.innerHTML = assigned.map(b => `<div class="assigned-bot-item"><div><span class="assigned-bot-name">${b.name}</span><br><span style="font-size:0.7rem;color:var(--muted);">${b.bot_name}</span></div><button class="btn btn-danger btn-sm" onclick="unassignBot('${tenantId}', ${b.id})">Remove</button></div>`).join('');
     const allRes = await fetch('/api/admin/bots', { headers: headers() });
     const all = await allRes.json();
     const assignedIds = assigned.map(b => b.id);
     const available = all.filter(b => !assignedIds.includes(b.id));
     const availableDiv = document.getElementById('available-bots-list');
     if (!available.length) availableDiv.innerHTML = '<p style="color:var(--muted);">No more bots to assign.</p>';
-    else availableDiv.innerHTML = available.map(b => `
-      <div class="available-bot-item" onclick="assignBot('${tenantId}', ${b.id})">
-        <strong>${b.name}</strong> — <span style="font-size:0.7rem;">${b.bot_name}</span><br>
-        <span style="font-size:0.65rem;color:var(--muted);">${b.description || ''}</span>
-      </div>
-    `).join('');
+    else availableDiv.innerHTML = available.map(b => `<div class="available-bot-item" onclick="assignBot('${tenantId}', ${b.id})"><strong>${b.name}</strong> — <span style="font-size:0.7rem;">${b.bot_name}</span><br><span style="font-size:0.65rem;color:var(--muted);">${b.description || ''}</span></div>`).join('');
   } catch(e) { toast('Failed to load bots'); }
 }
 async function assignBot(tenantId, botId) {
@@ -642,9 +1174,7 @@ async function loadAnalytics() {
   if (!id) { document.getElementById('analytics-content').innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;">Select a client</p>'; return; }
   const res = await fetch(`/api/admin/tenants/${id}/analytics`, { headers: headers() });
   const a = await res.json();
-  document.getElementById('analytics-content').innerHTML = `
-    <div class="analytics-grid"><div class="a-card"><div class="val">${a.totalMessages}</div><div class="lbl">Total Messages</div></div><div class="a-card"><div class="val">${a.uniqueSessions}</div><div class="lbl">Unique Sessions</div></div><div class="a-card"><div class="val">${a.avgRating}</div><div class="lbl">Avg Rating</div></div></div>
-    <div class="section-title" style="margin-bottom:0.8rem;">Recent Questions</div><div class="questions-list">${a.recentQuestions.length ? a.recentQuestions.map(q => `<div class="q-item">💬 ${q.question}</div>`).join('') : '<p style="color:var(--muted);">No questions yet</p>'}</div>`;
+  document.getElementById('analytics-content').innerHTML = `<div class="analytics-grid"><div class="a-card"><div class="val">${a.totalMessages}</div><div class="lbl">Total Messages</div></div><div class="a-card"><div class="val">${a.uniqueSessions}</div><div class="lbl">Unique Sessions</div></div><div class="a-card"><div class="val">${a.avgRating}</div><div class="lbl">Avg Rating</div></div></div><div class="section-title" style="margin-bottom:0.8rem;">Recent Questions</div><div class="questions-list">${a.recentQuestions.length ? a.recentQuestions.map(q => `<div class="q-item">💬 ${q.question}</div>`).join('') : '<p style="color:var(--muted);">No questions yet</p>'}</div>`;
 }
 document.getElementById('server-url').value = window.location.origin;
 loadDashboard();
